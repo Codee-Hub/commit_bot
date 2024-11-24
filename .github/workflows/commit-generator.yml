@@ -1,0 +1,44 @@
+name: Generate Commits
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  generate_commits:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install gitpython
+
+    - name: Configure Git
+      run: |
+        git config --local user.email "${{ secrets.COMMIT_EMAIL }}"
+        git config --local user.name "${{ secrets.COMMIT_USER }}"
+
+    - name: Run commit generation script
+      run: |
+        python generate_commits.py --days=365 --max_commits=10 --no_weekends --github_user="${{ secrets.COMMIT_USER }}" --github_email="${{ secrets.COMMIT_EMAIL }}"
+
+    - name: Push changes
+      run: |
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.COMMIT_GENERATOR_TOKEN }}
